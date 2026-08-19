@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net 'nonce-{{CSP_NONCE}}'">
+  <meta name="api-base" content="{{API_BASE_URL}}">
+  <link rel="dns-prefetch" href="https://api.skyline.cloud">
+  <link rel="preconnect" href="https://auth.skyline.cloud">
+  <title>Skyline Cloud Portal</title>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js" integrity="sha384-mQ93GR66B00ZXjt0YO5KlohRA5SY2XofN4zfuZxLkoj1gXtW8ANNCe9d5Y3eG5eD" crossorigin="anonymous"></script>
+</head>
+<body>
+  <header><h1>Skyline</h1></header>
+  <main>
+    <img src="https://skyline-assets.s3.amazonaws.com/branding/logo.png" alt="Skyline">
+    <p data-endpoint="${CONFIG_ENDPOINT}/status">Cloud status</p>
+  </main>
+  <noscript>This page works best with JavaScript enabled.</noscript>
+  <script src="assets/js/status.js"></script>
+</body>
+</html>

@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'nonce-{{CSP_NONCE}}'">
+  <meta http-equiv="refresh" content="0; url=/login">
+  <title>Dashboard</title>
+</head>
+<body>
+  <div id="root"></div>
+  <div id="content"></div>
+  <span class="updated">Last updated: 2026-06-17 09:30:00 UTC</span>
+  <script nonce="{{CSP_NONCE}}">
+    window.localStorage.getItem('token');
+    document.getElementById('root').innerHTML = 'loading';
+  </script>
+</body>
+</html>
