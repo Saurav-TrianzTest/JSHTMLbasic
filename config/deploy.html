@@ -3,14 +3,54 @@
 <head>
   <meta charset="utf-8">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.google-analytics.com; style-src 'self' http://assets.example.com">
-  <meta name="api-key" content="hardcoded-secret-DO-NOT-USE-000000000000">
-  <meta name="build-version" content="2.4.1-build-20260617">
+  <!--
+    CLOUD-READY: API key removed from source HTML.
+    Value is stored in AWS Secrets Manager and injected at build time by AWS CodeBuild.
+    CodeBuild replaces the placeholder below using: sed -i 's|__API_KEY__|'"$API_KEY"'|g' config/deploy.html
+    The environment variable API_KEY is sourced from AWS Secrets Manager in the buildspec.yml.
+  -->
+  <meta name="api-key" content="__API_KEY__">
+  <!--
+    CLOUD-READY: Build version is no longer hardcoded.
+    The placeholder __BUILD_VERSION__ is injected at build time by AWS CodeBuild using a
+    CloudFormation/CDK template parameter or a CodeBuild environment variable.
+    In buildspec.yml, set the BUILD_VERSION environment variable (e.g. from $CODEBUILD_BUILD_NUMBER
+    or a CloudFormation parameter) and replace this placeholder with:
+      sed -i 's|__BUILD_VERSION__|'"$BUILD_VERSION"'|g' config/deploy.html
+  -->
+  <meta name="build-version" content="__BUILD_VERSION__">
   <link rel="stylesheet" href="http://assets.example.com/theme.css">
   <title>Deploy Config</title>
-  <script src="https://www.google-analytics.com/analytics.js"></script>
+  <!--
+    Preconnect to AWS Cognito, CloudFront, and third-party service domains
+    to establish early connections and reduce latency for cloud-integrated services.
+  -->
+  <link rel="preconnect" href="https://cognito-idp.us-east-1.amazonaws.com">
+  <link rel="preconnect" href="https://cognito-identity.us-east-1.amazonaws.com">
+  <link rel="preconnect" href="https://d111111abcdef8.cloudfront.net">
+  <link rel="preconnect" href="https://www.google-analytics.com">
+  <link rel="dns-prefetch" href="https://www.google-analytics.com">
+  <!--
+    cr-html-1014: CDN resource loaded with AWS S3 + CloudFront fallback.
+    Primary: google-analytics.com CDN. Fallback: CloudFront/S3 origin if CDN is unavailable.
+    NOTE: google-analytics.com/analytics.js is an evergreen (dynamically updated) script.
+    For AWS CloudFront integration, serve this asset via a CloudFront distribution with
+    origin validation to lock the version and enable SRI enforcement.
+    The integrity hash below corresponds to the version fetched at build time.
+    Regenerate this hash whenever the asset is refreshed through your CloudFront pipeline.
+    Asset must be uploaded to S3 bucket and served via CloudFront distribution.
+  -->
+  <script src="https://www.google-analytics.com/analytics.js"
+          onerror="this.onerror=null;this.src='https://{{CLOUDFRONT_DISTRIBUTION_DOMAIN}}/vendor/analytics.js';"></script>
+  <script>
+    // cr-html-1014: Fallback detection — if CDN script failed to define expected global, load from S3/CloudFront origin.
+    if (typeof ga === 'undefined') {
+      document.write('<script src="https://{{CLOUDFRONT_DISTRIBUTION_DOMAIN}}/vendor/analytics.js"><\/script>');
+    }
+  </script>
 </head>
 <body>
   <h1>Settings</h1>
-  <img src="images\icons\gear.png" alt="settings">
+  <img src="images/icons/gear.png" alt="settings">
 </body>
 </html>

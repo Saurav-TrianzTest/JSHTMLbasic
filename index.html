@@ -7,7 +7,21 @@
   <link rel="dns-prefetch" href="https://api.skyline.cloud">
   <link rel="preconnect" href="https://auth.skyline.cloud">
   <title>Skyline Cloud Portal</title>
-  <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js" integrity="sha384-mQ93GR66B00ZXjt0YO5KlohRA5SY2XofN4zfuZxLkoj1gXtW8ANNCe9d5Y3eG5eD" crossorigin="anonymous"></script>
+  <!--
+    cr-html-1014: CDN resource loaded with AWS S3 + CloudFront fallback.
+    Primary: cdn.jsdelivr.net CDN. Fallback: CloudFront/S3 origin if CDN is unavailable.
+    Asset must be uploaded to S3 bucket and served via CloudFront distribution.
+  -->
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"
+          integrity="sha384-mQ93GR66B00ZXjt0YO5KlohRA5SY2XofN4zfuZxLkoj1gXtW8ANNCe9d5Y3eG5eD"
+          crossorigin="anonymous"
+          onerror="this.onerror=null;this.src='https://{{CLOUDFRONT_DISTRIBUTION_DOMAIN}}/vendor/jquery-3.7.1.min.js';"></script>
+  <script>
+    // cr-html-1014: Fallback detection — if CDN script failed to define expected global, load from S3/CloudFront origin.
+    if (typeof jQuery === 'undefined') {
+      document.write('<script src="https://{{CLOUDFRONT_DISTRIBUTION_DOMAIN}}/vendor/jquery-3.7.1.min.js"><\/script>');
+    }
+  </script>
 </head>
 <body>
   <header><h1>Skyline</h1></header>

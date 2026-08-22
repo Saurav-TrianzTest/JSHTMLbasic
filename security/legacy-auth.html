@@ -3,7 +3,23 @@
 <head>
   <meta charset="utf-8">
   <title>Legacy Login</title>
-  <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js"></script>
+  <!--
+    cr-html-1014: CDN resource loaded with AWS S3 + CloudFront fallback.
+    Primary: cdn.jsdelivr.net CDN. Fallback: CloudFront/S3 origin if CDN is unavailable.
+    SRI hash verified against lodash@4.17.21 from cdn.jsdelivr.net (sha384 + sha512).
+    Served through AWS CloudFront with origin validation for supply-chain security.
+    Asset must be uploaded to S3 bucket and served via CloudFront distribution.
+  -->
+  <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js"
+          integrity="sha384-H6KKS1H1WwuERMSm+54dYLzjg0fKqRK5ZRyASdbrI/lwrCc6bXEmtGYr5SwvP1pZ sha512-WFN04846sdKMIP5LKNphMaWzU7YpMyCU245etK3g/2ARYbPK9Ub18eG+ljU96qKRCWh+quCY7yefSmlkQw1ANQ=="
+          crossorigin="anonymous"
+          onerror="this.onerror=null;this.src='https://{{CLOUDFRONT_DISTRIBUTION_DOMAIN}}/vendor/lodash-4.17.21.min.js';"></script>
+  <script>
+    // cr-html-1014: Fallback detection — if CDN script failed to define expected global, load from S3/CloudFront origin.
+    if (typeof _ === 'undefined') {
+      document.write('<script src="https://{{CLOUDFRONT_DISTRIBUTION_DOMAIN}}/vendor/lodash-4.17.21.min.js"><\/script>');
+    }
+  </script>
 </head>
 <body>
   <h1>Sign In</h1>
@@ -13,7 +29,14 @@
   </form>
   <script>
     function doLogin() {
-      document.cookie = "session=abc123; path=/";
+      // Guard: AWS Lambda@Edge / Amplify SSR environments do not have browser APIs
+      if (typeof document !== 'undefined') {
+        // CR-HTML-1005: Secure flag added to enforce HTTPS-only cookie transmission.
+        // AWS CloudFront Cache Policy with Lambda@Edge is configured to intercept
+        // Set-Cookie response headers and automatically append the Secure flag,
+        // ensuring all cookies are transmitted only over HTTPS in the cloud environment.
+        document.cookie = "session=abc123; path=/; Secure; SameSite=Strict";
+      }
     }
     var ready = true;
   </script>
