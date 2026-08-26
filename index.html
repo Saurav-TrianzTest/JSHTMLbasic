@@ -2,12 +2,42 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net 'nonce-{{CSP_NONCE}}'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://#{CLOUDFRONT_DISTRIBUTION_DOMAIN} https://#{S3_BUCKET_NAME}.s3.amazonaws.com 'nonce-{{CSP_NONCE}}'">
   <meta name="api-base" content="{{API_BASE_URL}}">
   <link rel="dns-prefetch" href="https://api.skyline.cloud">
   <link rel="preconnect" href="https://auth.skyline.cloud">
   <title>Skyline Cloud Portal</title>
-  <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js" integrity="sha384-mQ93GR66B00ZXjt0YO5KlohRA5SY2XofN4zfuZxLkoj1gXtW8ANNCe9d5Y3eG5eD" crossorigin="anonymous"></script>
+  <!--
+    CDN Fallback Strategy: AWS S3 + CloudFront (cr-html-1014)
+    ──────────────────────────────────────────────────────────
+    Primary:  AWS CloudFront distribution serving jquery.min.js from S3 origin.
+    Fallback: Direct S3 origin URL if CloudFront is unavailable.
+    The inline script below detects CDN load failure (jQuery not defined) and
+    falls back to the S3 origin.
+
+    Setup required:
+    1. Upload jquery.min.js to S3:
+         s3://#{S3_BUCKET_NAME}/assets/js/jquery-3.7.1.min.js
+    2. Create a CloudFront distribution with the S3 bucket as origin.
+    3. Replace #{CLOUDFRONT_DISTRIBUTION_DOMAIN} and #{S3_BUCKET_NAME} with actual
+       values via AWS CodeBuild environment variables or CloudFormation substitution.
+  -->
+  <script src="https://#{CLOUDFRONT_DISTRIBUTION_DOMAIN}/assets/js/jquery-3.7.1.min.js"
+          integrity="sha384-mQ93GR66B00ZXjt0YO5KlohRA5SY2XofN4zfuZxLkoj1gXtW8ANNCe9d5Y3eG5eD"
+          crossorigin="anonymous"
+          nonce="{{CSP_NONCE}}"
+          onerror="(function(s){s.onerror=null;s.src='https://#{S3_BUCKET_NAME}.s3.amazonaws.com/assets/js/jquery-3.7.1.min.js';})(this)"></script>
+  <script nonce="{{CSP_NONCE}}">
+    /* CDN fallback detection: if CloudFront-served jQuery failed to load,
+       reload from the S3 origin directly. */
+    if (typeof jQuery === 'undefined') {
+      var s = document.createElement('script');
+      s.src = 'https://#{S3_BUCKET_NAME}.s3.amazonaws.com/assets/js/jquery-3.7.1.min.js';
+      s.crossOrigin = 'anonymous';
+      s.nonce = '{{CSP_NONCE}}';
+      document.head.appendChild(s);
+    }
+  </script>
 </head>
 <body>
   <header><h1>Skyline</h1></header>
