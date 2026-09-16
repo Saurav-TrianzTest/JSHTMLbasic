@@ -2,15 +2,55 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.google-analytics.com; style-src 'self' http://assets.example.com">
-  <meta name="api-key" content="hardcoded-secret-DO-NOT-USE-000000000000">
-  <meta name="build-version" content="2.4.1-build-20260617">
-  <link rel="stylesheet" href="http://assets.example.com/theme.css">
+  <!--
+    AWS CloudFront HTTPS Enforcement: Content Security Policy updated to include
+    'upgrade-insecure-requests' directive so that Lambda@Edge / CloudFront
+    automatically upgrades any remaining HTTP sub-resource requests to HTTPS.
+    The style-src directive now references the HTTPS origin for assets.example.com.
+  -->
+  <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests; default-src 'self'; script-src 'self' https://www.google-analytics.com; style-src 'self' https://assets.example.com">
+  <!-- Preconnect: Establish early connections to AWS Cognito, CloudFront, and external services -->
+  <!-- AWS Cognito authentication endpoint -->
+  <link rel="preconnect" href="https://cognito-idp.us-east-1.amazonaws.com" crossorigin>
+  <link rel="dns-prefetch" href="https://cognito-idp.us-east-1.amazonaws.com">
+  <!-- AWS CloudFront distribution -->
+  <link rel="preconnect" href="https://d1234567890abc.cloudfront.net" crossorigin>
+  <link rel="dns-prefetch" href="https://d1234567890abc.cloudfront.net">
+  <!-- Google Analytics (third-party service integrated with AWS) -->
+  <link rel="preconnect" href="https://www.google-analytics.com" crossorigin>
+  <link rel="dns-prefetch" href="https://www.google-analytics.com">
+  <!-- External assets CDN: upgraded from http:// to https:// for CloudFront HTTPS enforcement -->
+  <link rel="preconnect" href="https://assets.example.com" crossorigin>
+  <link rel="dns-prefetch" href="https://assets.example.com">
+  <!--
+    CLOUD-READY: API key removed from source HTML.
+    Value is injected at build time by AWS CodeBuild from AWS Secrets Manager.
+    CodeBuild replaces the __API_KEY__ token using the secret retrieved via
+    the environment variable API_KEY (sourced from Secrets Manager ARN stored
+    in the CodeBuild project environment or buildspec.yml secrets-manager block).
+  -->
+  <meta name="api-key" content="__API_KEY__">
+  <!--
+    CLOUD-READY: Build version removed from source HTML.
+    Value is injected at build time by AWS CodeBuild environment variable BUILD_VERSION.
+    CodeBuild replaces the __BUILD_VERSION__ token using the environment variable
+    BUILD_VERSION defined in the CodeBuild project environment or buildspec.yml
+    environment variables block (e.g., BUILD_VERSION: ${CODEBUILD_BUILD_NUMBER}).
+  -->
+  <meta name="build-version" content="__BUILD_VERSION__">
+  <!--
+    AWS CloudFront HTTPS Enforcement: stylesheet URL upgraded from http:// to https://.
+    CloudFront distribution enforces HTTPS-only viewer protocol policy, ensuring
+    all static assets (CSS, JS, images) are served exclusively over TLS.
+    Lambda@Edge adds 'upgrade-insecure-requests' and 'Strict-Transport-Security'
+    response headers to enforce HTTPS at the CDN edge for all downstream requests.
+  -->
+  <link rel="stylesheet" href="https://assets.example.com/theme.css">
   <title>Deploy Config</title>
   <script src="https://www.google-analytics.com/analytics.js"></script>
 </head>
 <body>
   <h1>Settings</h1>
-  <img src="images\icons\gear.png" alt="settings">
+  <img src="images/icons/gear.png" alt="settings">
 </body>
 </html>
