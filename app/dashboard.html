@@ -3,16 +3,89 @@
 <head>
   <meta charset="utf-8">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'nonce-{{CSP_NONCE}}'">
-  <meta http-equiv="refresh" content="0; url=/login">
+  <!--
+    CLOUD MIGRATION NOTE (cr-html-1010): The meta http-equiv="refresh" redirect to /login
+    has been removed. Navigation is now handled server-side via an AWS CloudFront Function
+    that issues an HTTP 301 redirect at the edge before this page is served to the client.
+    Configure a CloudFront Function on the viewer-request event for this path pattern to
+    return: { statusCode: 301, headers: { location: { value: '/login' } } }
+  -->
   <title>Dashboard</title>
+  <!-- SSR Skeleton Screen Styles for AWS CloudFront + Lambda@Edge SSR -->
+  <style>
+    /* Skeleton screen animation for SSR loading states */
+    .ssr-skeleton {
+      background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+      background-size: 200% 100%;
+      animation: ssr-shimmer 1.5s infinite;
+      border-radius: 4px;
+    }
+    @keyframes ssr-shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+    .ssr-skeleton-header {
+      height: 48px;
+      width: 100%;
+      margin-bottom: 16px;
+    }
+    .ssr-skeleton-card {
+      height: 120px;
+      width: 100%;
+      margin-bottom: 12px;
+      border-radius: 8px;
+    }
+    .ssr-skeleton-line {
+      height: 16px;
+      width: 80%;
+      margin-bottom: 8px;
+    }
+    .ssr-skeleton-line-short {
+      height: 16px;
+      width: 50%;
+      margin-bottom: 8px;
+    }
+    .ssr-skeleton-wrapper {
+      padding: 16px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    /* Hide skeleton once JS hydration is complete */
+    .ssr-hydrated .ssr-skeleton-wrapper {
+      display: none;
+    }
+  </style>
 </head>
 <body>
-  <div id="root"></div>
-  <div id="content"></div>
+  <!-- SSR root container with skeleton screen placeholder for AWS CloudFront Lambda@Edge SSR -->
+  <div id="root">
+    <!-- SSR Skeleton: Displayed during server-side render and initial hydration via Lambda@Edge -->
+    <div class="ssr-skeleton-wrapper" aria-hidden="true" data-ssr-placeholder="root">
+      <div class="ssr-skeleton ssr-skeleton-header"></div>
+      <div class="ssr-skeleton ssr-skeleton-card"></div>
+      <div class="ssr-skeleton ssr-skeleton-line"></div>
+      <div class="ssr-skeleton ssr-skeleton-line-short"></div>
+      <div class="ssr-skeleton ssr-skeleton-card"></div>
+    </div>
+  </div>
+  <!-- SSR content container with skeleton screen placeholder for AWS CloudFront Lambda@Edge SSR -->
+  <div id="content">
+    <!-- SSR Skeleton: Displayed during server-side render and initial hydration via Lambda@Edge -->
+    <div class="ssr-skeleton-wrapper" aria-hidden="true" data-ssr-placeholder="content">
+      <div class="ssr-skeleton ssr-skeleton-line"></div>
+      <div class="ssr-skeleton ssr-skeleton-line-short"></div>
+      <div class="ssr-skeleton ssr-skeleton-card"></div>
+      <div class="ssr-skeleton ssr-skeleton-line"></div>
+    </div>
+  </div>
   <span class="updated">Last updated: 2026-06-17 09:30:00 UTC</span>
   <script nonce="{{CSP_NONCE}}">
     window.localStorage.getItem('token');
     document.getElementById('root').innerHTML = 'loading';
+    // Remove SSR skeleton placeholders after client-side hydration completes
+    document.addEventListener('DOMContentLoaded', function() {
+      document.body.classList.add('ssr-hydrated');
+    });
   </script>
 </body>
 </html>

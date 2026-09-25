@@ -2,12 +2,33 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net 'nonce-{{CSP_NONCE}}'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://{{CLOUDFRONT_DISTRIBUTION_DOMAIN}} 'nonce-{{CSP_NONCE}}'">
   <meta name="api-base" content="{{API_BASE_URL}}">
   <link rel="dns-prefetch" href="https://api.skyline.cloud">
   <link rel="preconnect" href="https://auth.skyline.cloud">
   <title>Skyline Cloud Portal</title>
-  <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js" integrity="sha384-mQ93GR66B00ZXjt0YO5KlohRA5SY2XofN4zfuZxLkoj1gXtW8ANNCe9d5Y3eG5eD" crossorigin="anonymous"></script>
+  <!--
+    CLOUD READINESS FIX (cr-html-1014): CDN resource now served via AWS CloudFront
+    with an S3 origin fallback. The primary jQuery script is loaded from the
+    CloudFront distribution (backed by an S3 origin). An inline fallback script
+    detects load failure via the onerror handler and re-fetches the asset directly
+    from the S3 origin bucket, ensuring resilience when the CDN edge is unavailable.
+  -->
+  <script src="https://{{CLOUDFRONT_DISTRIBUTION_DOMAIN}}/assets/js/jquery-3.7.1.min.js"
+          integrity="sha384-mQ93GR66B00ZXjt0YO5KlohRA5SY2XofN4zfuZxLkoj1gXtW8ANNCe9d5Y3eG5eD"
+          crossorigin="anonymous"
+          onerror="this.onerror=null;this.src='https://{{S3_ORIGIN_BUCKET}}.s3.amazonaws.com/assets/js/jquery-3.7.1.min.js';"></script>
+  <script>
+    // Fallback detection: if the CloudFront-served jQuery did not define the
+    // expected global, reload it directly from the S3 origin bucket.
+    if (typeof window.jQuery === 'undefined') {
+      var fallback = document.createElement('script');
+      fallback.src = 'https://{{S3_ORIGIN_BUCKET}}.s3.amazonaws.com/assets/js/jquery-3.7.1.min.js';
+      fallback.integrity = 'sha384-mQ93GR66B00ZXjt0YO5KlohRA5SY2XofN4zfuZxLkoj1gXtW8ANNCe9d5Y3eG5eD';
+      fallback.crossOrigin = 'anonymous';
+      document.head.appendChild(fallback);
+    }
+  </script>
 </head>
 <body>
   <header><h1>Skyline</h1></header>

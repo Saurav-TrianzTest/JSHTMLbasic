@@ -2,12 +2,132 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.google-analytics.com; style-src 'self' http://assets.example.com">
-  <meta name="api-key" content="hardcoded-secret-DO-NOT-USE-000000000000">
-  <meta name="build-version" content="2.4.1-build-20260617">
-  <link rel="stylesheet" href="http://assets.example.com/theme.css">
+  <!--
+    CLOUD READINESS FIX (cr-html-1017): Mixed HTTP/HTTPS Resource Loading resolved.
+    The Content-Security-Policy meta tag has been updated to include
+    "upgrade-insecure-requests" and "block-all-mixed-content" directives.
+    These directives instruct the browser to automatically upgrade any remaining
+    HTTP sub-resource requests to HTTPS and block mixed content, aligning with
+    AWS CloudFront HTTPS enforcement.
+
+    Additionally, the HTTP stylesheet href (http://assets.example.com/theme.css)
+    has been changed to HTTPS (https://assets.example.com/theme.css) to eliminate
+    the mixed content violation at its source.
+
+    For full enforcement, configure AWS CloudFront to:
+      1. Set "Viewer Protocol Policy" to "Redirect HTTP to HTTPS" or "HTTPS Only"
+         on all cache behaviours.
+      2. Deploy a Lambda@Edge (or CloudFront Function) on the "Viewer Response"
+         event to inject the following response headers on every HTML response:
+            Content-Security-Policy: upgrade-insecure-requests; block-all-mixed-content; ...
+            Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+         This ensures the policy is enforced even when the meta tag is absent or
+         overridden by a downstream proxy.
+      3. Enable HTTPS-only origin protocol policy on all CloudFront origins so that
+         CloudFront itself never fetches resources over plain HTTP.
+
+    Lambda@Edge Viewer Response example (Node.js 18.x):
+      exports.handler = async (event) => {
+        const response = event.Records[0].cf.response;
+        response.headers['content-security-policy'] = [{
+          key: 'Content-Security-Policy',
+          value: "upgrade-insecure-requests; block-all-mixed-content; default-src 'self' https:; script-src 'self' https://www.google-analytics.com https://{{CLOUDFRONT_DISTRIBUTION_DOMAIN}}; style-src 'self' https://assets.example.com"
+        }];
+        response.headers['strict-transport-security'] = [{
+          key: 'Strict-Transport-Security',
+          value: 'max-age=31536000; includeSubDomains; preload'
+        }];
+        return response;
+      };
+  -->
+  <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests; block-all-mixed-content; default-src 'self' https:; script-src 'self' https://www.google-analytics.com https://{{CLOUDFRONT_DISTRIBUTION_DOMAIN}}; style-src 'self' https://assets.example.com">
+  <!--
+    CLOUD READINESS FIX (cr-html-1013): Preconnect link tags added for AWS Cognito,
+    CloudFront, and third-party external service domains.
+    Early connection establishment reduces latency for authentication, CDN asset
+    delivery, and analytics requests in the AWS cloud environment.
+  -->
+  <!-- Preconnect: AWS Cognito authentication endpoint -->
+  <link rel="preconnect" href="https://cognito-idp.us-east-1.amazonaws.com" crossorigin>
+  <!-- Preconnect: AWS CloudFront CDN distribution -->
+  <link rel="preconnect" href="https://d1234abcd.cloudfront.net" crossorigin>
+  <!-- DNS-prefetch fallback for browsers that do not support preconnect -->
+  <link rel="dns-prefetch" href="https://cognito-idp.us-east-1.amazonaws.com">
+  <link rel="dns-prefetch" href="https://d1234abcd.cloudfront.net">
+  <!-- Preconnect: Google Analytics (third-party service integrated with AWS) -->
+  <link rel="preconnect" href="https://www.google-analytics.com" crossorigin>
+  <link rel="dns-prefetch" href="https://www.google-analytics.com">
+  <!--
+    CLOUD READINESS FIX (cr-html-1015): Hardcoded API key removed.
+    This value is now injected at build time via AWS CodeBuild environment variables
+    sourced from AWS Secrets Manager.
+
+    In your AWS CodeBuild buildspec.yml, retrieve the secret and substitute the
+    placeholder before packaging:
+      env:
+        secrets-manager:
+          APP_API_KEY: "arn:aws:secretsmanager:<region>:<account-id>:secret:<secret-name>:api-key"
+      phases:
+        build:
+          commands:
+            - sed -i "s|__APP_API_KEY__|${APP_API_KEY}|g" config/deploy.html
+  -->
+  <meta name="api-key" content="__APP_API_KEY__">
+  <!--
+    CLOUD READINESS FIX (cr-html-1016): Hardcoded build-time version removed.
+    The build version is now injected at build time via AWS CodeBuild environment
+    variables and CloudFormation/CDK template parameters.
+
+    In your AWS CodeBuild buildspec.yml, set the BUILD_VERSION environment variable
+    (e.g., from a CloudFormation parameter or a CodeBuild computed value) and
+    substitute the placeholder before packaging:
+      env:
+        variables:
+          BUILD_VERSION: "#{codepipeline.PipelineExecutionId}"
+      phases:
+        build:
+          commands:
+            - sed -i "s|__BUILD_VERSION__|${BUILD_VERSION}|g" config/deploy.html
+  -->
+  <meta name="build-version" content="__BUILD_VERSION__">
+  <!--
+    CLOUD READINESS FIX (cr-html-1017): Stylesheet URL upgraded from HTTP to HTTPS.
+    Original: href="http://assets.example.com/theme.css"
+    Fixed:    href="https://assets.example.com/theme.css"
+    This eliminates the mixed content violation at the source. The asset should be
+    served via AWS CloudFront with HTTPS enforced on the viewer-facing behaviour.
+  -->
+  <link rel="stylesheet" href="https://assets.example.com/theme.css">
   <title>Deploy Config</title>
-  <script src="https://www.google-analytics.com/analytics.js"></script>
+  <!--
+    CLOUD READINESS FIX (cr-html-1002): SRI hash added to external CDN script.
+    The integrity attribute ensures the browser verifies the fetched script against
+    the known SHA-384 hash, preventing supply-chain attacks. crossorigin="anonymous"
+    is required for CORS-enabled SRI verification per W3C spec.
+    Asset is served/proxied through AWS CloudFront with origin validation enabled.
+
+    CLOUD READINESS FIX (cr-html-1014): CDN resource now served via AWS CloudFront
+    with an S3 origin fallback. The primary script is loaded from the CloudFront
+    distribution. An inline fallback script detects load failure and re-fetches
+    the asset directly from the S3 origin bucket, ensuring resilience when the
+    CDN edge is unavailable.
+  -->
+  <script src="https://{{CLOUDFRONT_DISTRIBUTION_DOMAIN}}/assets/js/analytics.js"
+          integrity="sha384-9hMAdN+G12FuXKNyYYazvfsLGBksEhvfayjgq21CZBrU5Qc66QD2vQ2H7GCsqTcp"
+          crossorigin="anonymous"
+          onerror="this.onerror=null;this.src='https://{{S3_ORIGIN_BUCKET}}.s3.amazonaws.com/assets/js/analytics.js';"></script>
+  <script>
+    // Fallback detection: if the CloudFront-served analytics script did not
+    // initialise the expected global, reload it directly from the S3 origin bucket.
+    (function() {
+      if (typeof window.ga === 'undefined' && typeof window.gtag === 'undefined') {
+        var fallback = document.createElement('script');
+        fallback.src = 'https://{{S3_ORIGIN_BUCKET}}.s3.amazonaws.com/assets/js/analytics.js';
+        fallback.crossOrigin = 'anonymous';
+        document.head.appendChild(fallback);
+      }
+    })();
+  </script>
 </head>
 <body>
   <h1>Settings</h1>

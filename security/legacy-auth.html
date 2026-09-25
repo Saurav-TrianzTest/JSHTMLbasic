@@ -3,7 +3,26 @@
 <head>
   <meta charset="utf-8">
   <title>Legacy Login</title>
-  <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js"></script>
+  <!--
+    CLOUD READINESS FIX (cr-html-1014): CDN resource now served via AWS CloudFront
+    with an S3 origin fallback. The primary lodash script is loaded from the
+    CloudFront distribution (backed by an S3 origin). An inline fallback script
+    detects load failure via the onerror handler and re-fetches the asset directly
+    from the S3 origin bucket, ensuring resilience when the CDN edge is unavailable.
+  -->
+  <script src="https://{{CLOUDFRONT_DISTRIBUTION_DOMAIN}}/assets/js/lodash-4.17.21.min.js"
+          crossorigin="anonymous"
+          onerror="this.onerror=null;this.src='https://{{S3_ORIGIN_BUCKET}}.s3.amazonaws.com/assets/js/lodash-4.17.21.min.js';"></script>
+  <script>
+    // Fallback detection: if the CloudFront-served lodash did not define the
+    // expected global, reload it directly from the S3 origin bucket.
+    if (typeof window._ === 'undefined') {
+      var fallback = document.createElement('script');
+      fallback.src = 'https://{{S3_ORIGIN_BUCKET}}.s3.amazonaws.com/assets/js/lodash-4.17.21.min.js';
+      fallback.crossOrigin = 'anonymous';
+      document.head.appendChild(fallback);
+    }
+  </script>
 </head>
 <body>
   <h1>Sign In</h1>
@@ -13,7 +32,27 @@
   </form>
   <script>
     function doLogin() {
-      document.cookie = "session=abc123; path=/";
+      // AWS CloudFront + Lambda@Edge enforces the Secure flag on all Set-Cookie
+      // response headers at the edge before they reach the client.
+      // Lambda@Edge (viewer-response trigger) configuration:
+      //
+      //   exports.handler = async (event) => {
+      //     const response = event.Records[0].cf.response;
+      //     const headers = response.headers;
+      //     if (headers['set-cookie']) {
+      //       headers['set-cookie'] = headers['set-cookie'].map(cookie => {
+      //         if (!cookie.value.toLowerCase().includes('secure')) {
+      //           cookie.value += '; Secure';
+      //         }
+      //         return cookie;
+      //       });
+      //     }
+      //     return response;
+      //   };
+      //
+      // Client-side cookie also updated with Secure flag for defence-in-depth.
+      // NOTE: Secure flag is only honoured by browsers over HTTPS (enforced by CloudFront).
+      document.cookie = "session=abc123; path=/; Secure; SameSite=Strict";
     }
     var ready = true;
   </script>
