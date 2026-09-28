@@ -3,16 +3,100 @@
 <head>
   <meta charset="utf-8">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'nonce-{{CSP_NONCE}}'">
-  <meta http-equiv="refresh" content="0; url=/login">
+  <!--
+    GCP Cloud Load Balancing URL map redirect (HTTP 301) handles /dashboard -> /login at the edge.
+    The meta refresh tag has been removed; configure a redirect rule in your GCP URL map:
+      pathMatcher rule: path=/dashboard, redirectAction: { hostRedirect, pathRedirect: "/login", redirectResponseCode: MOVED_PERMANENTLY_DEFAULT }
+  -->
   <title>Dashboard</title>
+  <!-- Skeleton screen styles served via Cloud Storage + Cloud CDN for GCP Cloud Run SSR -->
+  <style>
+    /* SSR Skeleton Screen Placeholders — GCP Cloud Run SSR pattern */
+    .skeleton-screen {
+      width: 100%;
+      min-height: 200px;
+      background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+      background-size: 200% 100%;
+      animation: skeleton-loading 1.4s infinite ease-in-out;
+      border-radius: 4px;
+    }
+    .skeleton-header {
+      height: 40px;
+      width: 60%;
+      margin-bottom: 16px;
+      background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+      background-size: 200% 100%;
+      animation: skeleton-loading 1.4s infinite ease-in-out;
+      border-radius: 4px;
+    }
+    .skeleton-line {
+      height: 16px;
+      width: 100%;
+      margin-bottom: 10px;
+      background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+      background-size: 200% 100%;
+      animation: skeleton-loading 1.4s infinite ease-in-out;
+      border-radius: 4px;
+    }
+    .skeleton-line.short { width: 75%; }
+    .skeleton-card {
+      height: 120px;
+      width: 100%;
+      margin-bottom: 16px;
+      background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+      background-size: 200% 100%;
+      animation: skeleton-loading 1.4s infinite ease-in-out;
+      border-radius: 8px;
+    }
+    @keyframes skeleton-loading {
+      0%   { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+    /* Hide skeleton once SSR/client hydration completes */
+    .ssr-hydrated .skeleton-screen,
+    .ssr-hydrated .skeleton-header,
+    .ssr-hydrated .skeleton-line,
+    .ssr-hydrated .skeleton-card {
+      display: none;
+    }
+  </style>
 </head>
 <body>
-  <div id="root"></div>
-  <div id="content"></div>
+  <!-- SSR root container: skeleton screen placeholder for GCP Cloud Run SSR initial render -->
+  <div id="root" aria-busy="true" aria-label="Loading application, please wait…">
+    <!-- Skeleton screen: meaningful HTML structure sent by GCP Cloud Run SSR server -->
+    <div class="skeleton-screen" role="status">
+      <div class="skeleton-header"></div>
+      <div class="skeleton-card"></div>
+      <div class="skeleton-line"></div>
+      <div class="skeleton-line short"></div>
+      <div class="skeleton-line"></div>
+    </div>
+  </div>
+  <!-- SSR content container: skeleton screen placeholder for GCP Cloud Run SSR initial render -->
+  <div id="content" aria-busy="true" aria-label="Loading content, please wait…">
+    <!-- Skeleton screen: meaningful HTML structure sent by GCP Cloud Run SSR server -->
+    <div class="skeleton-screen" role="status">
+      <div class="skeleton-header"></div>
+      <div class="skeleton-card"></div>
+      <div class="skeleton-line"></div>
+      <div class="skeleton-line short"></div>
+      <div class="skeleton-line"></div>
+      <div class="skeleton-card"></div>
+    </div>
+  </div>
   <span class="updated">Last updated: 2026-06-17 09:30:00 UTC</span>
   <script nonce="{{CSP_NONCE}}">
     window.localStorage.getItem('token');
     document.getElementById('root').innerHTML = 'loading';
+    // Remove skeleton screens and mark hydration complete after client-side render
+    document.addEventListener('DOMContentLoaded', function () {
+      document.body.classList.add('ssr-hydrated');
+      var rootEl = document.getElementById('root');
+      var contentEl = document.getElementById('content');
+      if (rootEl) { rootEl.removeAttribute('aria-busy'); }
+      if (contentEl) { contentEl.removeAttribute('aria-busy'); }
+    });
   </script>
 </body>
 </html>

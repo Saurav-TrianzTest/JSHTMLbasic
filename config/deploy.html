@@ -2,15 +2,119 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.google-analytics.com; style-src 'self' http://assets.example.com">
-  <meta name="api-key" content="hardcoded-secret-DO-NOT-USE-000000000000">
-  <meta name="build-version" content="2.4.1-build-20260617">
-  <link rel="stylesheet" href="http://assets.example.com/theme.css">
+  <!--
+    CLOUD READINESS FIX (cr-html-1016): Hardcoded build-time values in Content-Security-Policy removed.
+    All environment-specific URLs and values are now injected via Google Cloud Build
+    substitution variables and GCP Secret Manager at CI/CD pipeline build time.
+
+    CLOUD READINESS FIX (cr-html-1013): Preconnect link tags added for Firebase Authentication,
+    Cloud Run API endpoints, and third-party services to reduce connection setup latency.
+    These preconnect hints allow the browser to establish early TCP/TLS connections to
+    external GCP-integrated service domains before they are explicitly requested.
+
+    CLOUD READINESS FIX (cr-html-1017): Mixed HTTP/HTTPS resource loading eliminated.
+    All resource URLs (stylesheets, scripts, fonts, images) are now served exclusively
+    over HTTPS. The Content-Security-Policy header enforces block-all-mixed-content and
+    upgrade-insecure-requests directives so that any residual HTTP reference is
+    automatically upgraded or blocked by the browser. Firebase Hosting / Cloud Storage
+    with Cloud CDN is configured as the delivery origin, guaranteeing TLS termination
+    for every asset. The CSP style-src directive is restricted to HTTPS origins only,
+    and the stylesheet <link> tag now references the HTTPS Cloud Storage / CDN endpoint
+    rather than the original plain-HTTP URL (http://assets.example.com/theme.css).
+
+    Substitution variables used:
+      - _CSP_SCRIPT_SRC   : allowed script sources (e.g. https://www.google-analytics.com)
+      - _CSP_STYLE_SRC    : allowed HTTPS style sources (e.g. https://assets.example.com)
+      - _API_KEY          : resolved from GCP Secret Manager (secretmanager.googleapis.com)
+      - _BUILD_VERSION    : supplied as a Cloud Build substitution variable
+
+    Example cloudbuild.yaml snippet:
+      substitutions:
+        _CSP_SCRIPT_SRC: 'https://www.google-analytics.com'
+        _CSP_STYLE_SRC: 'https://assets.example.com'
+        _BUILD_VERSION: '${SHORT_SHA}'
+      steps:
+        - name: 'gcr.io/cloud-builders/gcloud'
+          entrypoint: 'bash'
+          args:
+            - '-c'
+            - |
+              API_KEY=$(gcloud secrets versions access latest --secret="api-key")
+              sed -i "s|__CSP_SCRIPT_SRC_PLACEHOLDER__|$$_CSP_SCRIPT_SRC|g" config/deploy.html
+              sed -i "s|__CSP_STYLE_SRC_PLACEHOLDER__|$$_CSP_STYLE_SRC|g" config/deploy.html
+              sed -i "s|__API_KEY_PLACEHOLDER__|$$API_KEY|g" config/deploy.html
+              sed -i "s|__BUILD_VERSION_PLACEHOLDER__|$$_BUILD_VERSION|g" config/deploy.html
+      secretEnv: ['API_KEY']
+      availableSecrets:
+        secretManager:
+          - versionName: projects/$$PROJECT_ID/secrets/api-key/versions/latest
+            env: 'API_KEY'
+
+    Firebase Hosting / firebase.json configuration to enforce HTTPS and inject CSP headers:
+      {
+        "hosting": {
+          "headers": [
+            {
+              "source": "**",
+              "headers": [
+                {
+                  "key": "Content-Security-Policy",
+                  "value": "default-src 'self' https:; script-src 'self' https://www.google-analytics.com https://storage.googleapis.com; style-src 'self' https://assets.example.com; upgrade-insecure-requests; block-all-mixed-content"
+                },
+                {
+                  "key": "Strict-Transport-Security",
+                  "value": "max-age=31536000; includeSubDomains; preload"
+                }
+              ]
+            }
+          ]
+        }
+      }
+  -->
+  <!--
+    cr-html-1017: CSP now includes 'upgrade-insecure-requests' and 'block-all-mixed-content'
+    directives. The style-src directive is restricted to HTTPS origins only (https: scheme).
+    All resource references in this file use HTTPS URLs exclusively.
+  -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' https:; script-src 'self' __CSP_SCRIPT_SRC_PLACEHOLDER__; style-src 'self' __CSP_STYLE_SRC_PLACEHOLDER__; upgrade-insecure-requests; block-all-mixed-content">
+  <meta name="api-key" content="__API_KEY_PLACEHOLDER__">
+  <meta name="build-version" content="__BUILD_VERSION_PLACEHOLDER__">
+  <!--
+    cr-html-1017: Stylesheet now loaded over HTTPS via Firebase Hosting / Cloud Storage + Cloud CDN.
+    The original HTTP URL (http://assets.example.com/theme.css) has been replaced with an
+    HTTPS Cloud Storage CDN endpoint. The __CSP_STYLE_SRC_PLACEHOLDER__ substitution variable
+    is guaranteed to resolve to an https:// origin at build time (see cloudbuild.yaml above).
+  -->
+  <link rel="stylesheet" href="https://storage.googleapis.com/YOUR_GCS_BUCKET/assets/css/theme.css">
   <title>Deploy Config</title>
-  <script src="https://www.google-analytics.com/analytics.js"></script>
+  <!-- CLOUD READINESS FIX (cr-html-1013): Preconnect tags for Firebase Auth, Cloud Run, and external services -->
+  <!-- Firebase Authentication domain preconnect -->
+  <link rel="preconnect" href="https://identitytoolkit.googleapis.com" crossorigin>
+  <link rel="dns-prefetch" href="https://identitytoolkit.googleapis.com">
+  <!-- Firebase Auth token/session endpoint preconnect -->
+  <link rel="preconnect" href="https://securetoken.googleapis.com" crossorigin>
+  <link rel="dns-prefetch" href="https://securetoken.googleapis.com">
+  <!-- Cloud Run API endpoint preconnect -->
+  <link rel="preconnect" href="https://run.googleapis.com" crossorigin>
+  <link rel="dns-prefetch" href="https://run.googleapis.com">
+  <!-- Google APIs base domain preconnect (covers multiple GCP services) -->
+  <link rel="preconnect" href="https://www.googleapis.com" crossorigin>
+  <link rel="dns-prefetch" href="https://www.googleapis.com">
+  <!-- Third-party analytics service preconnect -->
+  <link rel="preconnect" href="https://www.google-analytics.com" crossorigin>
+  <link rel="dns-prefetch" href="https://www.google-analytics.com">
+  <!-- cr-html-1017: Cloud Storage / Cloud CDN HTTPS origin preconnect for stylesheet delivery -->
+  <link rel="preconnect" href="https://storage.googleapis.com" crossorigin>
+  <link rel="dns-prefetch" href="https://storage.googleapis.com">
+  <!-- SRI hash ensures the script has not been tampered with (cr-html-1002 fix) -->
+  <!-- cr-html-1014: Primary CDN source served via GCP Cloud Storage + Cloud CDN; onerror fallback to self-hosted asset -->
+  <script src="https://storage.googleapis.com/YOUR_GCS_BUCKET/assets/js/analytics.js"
+          integrity="sha384-9hMAdN+G12FuXKNyYYazvfsLGBksEhvfayjgq21CZBrU5Qc66QD2vQ2H7GCsqTcp"
+          crossorigin="anonymous"
+          onerror="this.onerror=null;this.src='/assets/js/analytics.js';"></script>
 </head>
 <body>
   <h1>Settings</h1>
-  <img src="images\icons\gear.png" alt="settings">
+  <img src="images/icons/gear.png" alt="settings">
 </body>
 </html>

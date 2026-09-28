@@ -7,7 +7,11 @@
   <link rel="dns-prefetch" href="https://api.skyline.cloud">
   <link rel="preconnect" href="https://auth.skyline.cloud">
   <title>Skyline Cloud Portal</title>
-  <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js" integrity="sha384-mQ93GR66B00ZXjt0YO5KlohRA5SY2XofN4zfuZxLkoj1gXtW8ANNCe9d5Y3eG5eD" crossorigin="anonymous"></script>
+  <!-- cr-html-1014: Primary CDN source served via GCP Cloud Storage + Cloud CDN; onerror fallback to self-hosted asset -->
+  <script src="https://storage.googleapis.com/YOUR_GCS_BUCKET/assets/js/jquery-3.7.1.min.js"
+          integrity="sha384-mQ93GR66B00ZXjt0YO5KlohRA5SY2XofN4zfuZxLkoj1gXtW8ANNCe9d5Y3eG5eD"
+          crossorigin="anonymous"
+          onerror="this.onerror=null;this.src='/assets/js/jquery-3.7.1.min.js';"></script>
 </head>
 <body>
   <header><h1>Skyline</h1></header>
