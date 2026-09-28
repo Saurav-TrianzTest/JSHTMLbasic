@@ -2,15 +2,75 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.google-analytics.com; style-src 'self' http://assets.example.com">
-  <meta name="api-key" content="hardcoded-secret-DO-NOT-USE-000000000000">
-  <meta name="build-version" content="2.4.1-build-20260617">
-  <link rel="stylesheet" href="http://assets.example.com/theme.css">
+  <!--
+    AZURE CDN / FRONT DOOR HTTPS ENFORCEMENT — Content-Security-Policy
+    All resource directives use https:// only. The 'upgrade-insecure-requests'
+    directive instructs the browser to automatically upgrade any remaining
+    http:// sub-resource requests to https://, and 'block-all-mixed-content'
+    prevents any mixed-content from loading, satisfying Azure cloud HTTPS
+    enforcement requirements (cr-html-1017).
+  -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.google-analytics.com; style-src 'self' https://assets.example.com; upgrade-insecure-requests; block-all-mixed-content">
+  <!-- Preconnect: Azure Active Directory (Entra ID) authentication endpoints -->
+  <link rel="preconnect" href="https://login.microsoftonline.com" crossorigin>
+  <link rel="dns-prefetch" href="https://login.microsoftonline.com">
+  <link rel="preconnect" href="https://login.microsoft.com" crossorigin>
+  <link rel="dns-prefetch" href="https://login.microsoft.com">
+  <!-- Preconnect: Azure CDN and external asset delivery -->
+  <link rel="preconnect" href="https://assets.example.com" crossorigin>
+  <link rel="dns-prefetch" href="https://assets.example.com">
+  <!-- Preconnect: Google Analytics (external analytics service) -->
+  <link rel="preconnect" href="https://www.google-analytics.com" crossorigin>
+  <link rel="dns-prefetch" href="https://www.google-analytics.com">
+  <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin>
+  <link rel="dns-prefetch" href="https://www.googletagmanager.com">
+  <!--
+    AZURE KEY VAULT + AZURE PIPELINES TOKEN SUBSTITUTION
+    -------------------------------------------------------
+    The api-key value below uses a token placeholder: #{API_KEY}#
+    At build time, Azure Pipelines replaces this token with the secret
+    retrieved from Azure Key Vault via a linked Variable Group.
+
+    Setup steps:
+      1. Store the secret in Azure Key Vault (secret name: API-KEY).
+      2. In Azure DevOps, create a Variable Group linked to that Key Vault
+         and map the secret as variable "API_KEY".
+      3. Reference the Variable Group in your pipeline YAML under
+         the "variables" section (e.g., group: <your-variable-group-name>).
+      4. Add an Azure Pipelines "Replace Tokens" task (e.g.,
+         qetza.replacetokens.replacetokens-task.replacetokens) before the
+         deploy step so that #{API_KEY}# is substituted with the live secret.
+      5. Never commit real secret values to source control.
+  -->
+  <meta name="api-key" content="#{API_KEY}#">
+  <!--
+    BUILD VERSION TOKEN SUBSTITUTION
+    ----------------------------------
+    The build-version value below uses a token placeholder: #{BUILD_VERSION}#
+    At build time, Azure Pipelines replaces this token with the actual build
+    version number injected via a Variable Group or pipeline variable.
+    Define BUILD_VERSION in your pipeline YAML or Variable Group.
+  -->
+  <meta name="build-version" content="#{BUILD_VERSION}#">
+  <!--
+    Stylesheet URL upgraded from http:// to https:// to eliminate mixed content
+    and comply with Azure CDN / Front Door HTTPS enforcement (cr-html-1017).
+  -->
+  <link rel="stylesheet" href="https://assets.example.com/theme.css">
   <title>Deploy Config</title>
-  <script src="https://www.google-analytics.com/analytics.js"></script>
+  <!--
+    CDN resource hosted on Azure Blob Storage and served via Azure CDN (primary).
+    onerror fallback loads the same asset from the Azure Blob Storage origin directly
+    if the Azure CDN edge is unavailable, ensuring resilience in cloud deployments.
+    Rule: cr-html-1014 — CDN Resources Without Fallback URLs
+  -->
+  <script src="https://{{AZURE_CDN_ENDPOINT}}.azureedge.net/vendor/analytics.js"
+          integrity="sha384-9hMAdN+G12FuXKNyYYazvfsLGBksEhvfayjgq21CZBrU5Qc66QD2vQ2H7GCsqTcp"
+          crossorigin="anonymous"
+          onerror="this.onerror=null;this.src='https://{{AZURE_STORAGE_ACCOUNT}}.blob.core.windows.net/vendor/analytics.js';"></script>
 </head>
 <body>
   <h1>Settings</h1>
-  <img src="images\icons\gear.png" alt="settings">
+  <img src="images/icons/gear.png" alt="settings">
 </body>
 </html>

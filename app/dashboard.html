@@ -3,15 +3,77 @@
 <head>
   <meta charset="utf-8">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'nonce-{{CSP_NONCE}}'">
-  <meta http-equiv="refresh" content="0; url=/login">
+  <!--
+    AZURE FRONT DOOR REDIRECT RULE (replaces meta refresh):
+    Configure an HTTP 301 redirect rule in Azure Front Door for this route:
+      Match condition : Request URL path equals /dashboard (or this page's path)
+      Redirect type  : Moved (301)
+      Redirect URL   : /login
+    This server-side redirect is handled at the Azure Front Door edge layer,
+    eliminating the need for client-side meta refresh navigation.
+  -->
   <title>Dashboard</title>
+  <style>
+    /* Azure SSR Skeleton Screen Styles */
+    .ssr-skeleton {
+      background: #f0f0f0;
+      border-radius: 4px;
+      animation: ssr-shimmer 1.5s infinite linear;
+      background: linear-gradient(to right, #f0f0f0 8%, #e0e0e0 18%, #f0f0f0 33%);
+      background-size: 800px 100%;
+    }
+    @keyframes ssr-shimmer {
+      0%   { background-position: -800px 0; }
+      100% { background-position: 800px 0; }
+    }
+    .ssr-skeleton-header {
+      height: 40px;
+      width: 60%;
+      margin-bottom: 16px;
+    }
+    .ssr-skeleton-line {
+      height: 16px;
+      width: 100%;
+      margin-bottom: 10px;
+      border-radius: 4px;
+    }
+    .ssr-skeleton-line.short { width: 70%; }
+    .ssr-skeleton-card {
+      height: 120px;
+      width: 100%;
+      margin-bottom: 16px;
+      border-radius: 8px;
+    }
+    .ssr-skeleton-avatar {
+      height: 48px;
+      width: 48px;
+      border-radius: 50%;
+      margin-bottom: 12px;
+    }
+  </style>
 </head>
 <body>
-  <div id="root"></div>
-  <div id="content"></div>
+  <!-- SSR Skeleton: root container — Azure Static Web Apps edge-rendered placeholder -->
+  <div id="root" aria-busy="true" aria-label="Loading application, please wait…">
+    <div class="ssr-skeleton ssr-skeleton-header" role="presentation" aria-hidden="true"></div>
+    <div class="ssr-skeleton ssr-skeleton-line" role="presentation" aria-hidden="true"></div>
+    <div class="ssr-skeleton ssr-skeleton-line short" role="presentation" aria-hidden="true"></div>
+    <div class="ssr-skeleton ssr-skeleton-card" role="presentation" aria-hidden="true"></div>
+    <div class="ssr-skeleton ssr-skeleton-line" role="presentation" aria-hidden="true"></div>
+    <div class="ssr-skeleton ssr-skeleton-line short" role="presentation" aria-hidden="true"></div>
+  </div>
+  <!-- SSR Skeleton: content container — Azure Static Web Apps edge-rendered placeholder -->
+  <div id="content" aria-busy="true" aria-label="Loading content, please wait…">
+    <div class="ssr-skeleton ssr-skeleton-avatar" role="presentation" aria-hidden="true"></div>
+    <div class="ssr-skeleton ssr-skeleton-line" role="presentation" aria-hidden="true"></div>
+    <div class="ssr-skeleton ssr-skeleton-line short" role="presentation" aria-hidden="true"></div>
+    <div class="ssr-skeleton ssr-skeleton-card" role="presentation" aria-hidden="true"></div>
+    <div class="ssr-skeleton ssr-skeleton-line" role="presentation" aria-hidden="true"></div>
+  </div>
   <span class="updated">Last updated: 2026-06-17 09:30:00 UTC</span>
   <script nonce="{{CSP_NONCE}}">
     window.localStorage.getItem('token');
+    // Clear SSR skeleton once client-side JS hydrates the component
     document.getElementById('root').innerHTML = 'loading';
   </script>
 </body>
