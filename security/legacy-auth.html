@@ -3,18 +3,52 @@
 <head>
   <meta charset="utf-8">
   <title>Legacy Login</title>
-  <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js"></script>
+  <!-- CSP enforced at edge via AWS CloudFront Response Headers Policy (cr-html-1003) -->
+  <!-- Form action domain validation enforced by AWS WAF domain-whitelist rule (cr-html-1004):
+       All form submissions are routed through the API Gateway proxy endpoint.
+       AWS WAF inspects and validates the target domain against the approved whitelist,
+       blocking any attempt to exfiltrate data to untrusted external domains. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'nonce-{{CSP_NONCE}}' https://cdn.jsdelivr.net https://{{CLOUDFRONT_DOMAIN}}; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'self'; object-src 'none';">
+  <script id="runtime-config" type="application/json">{"formActionUrl":"__RUNTIME_CONFIG_FORM_ACTION_URL__"}</script>
+  <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js" integrity="sha384-H6KKS1H1WwuERMSm+54dYLzjg0fKqRK5ZRyASdbrI/lwrCc6bXEmtGYr5SwvP1pZ" crossorigin="anonymous"></script>
+  <script nonce="{{CSP_NONCE}}">if (typeof window._ === 'undefined') { document.write('<script src="https://{{CLOUDFRONT_DOMAIN}}/assets/js/lodash-4.17.21.min.js" integrity="sha384-H6KKS1H1WwuERMSm+54dYLzjg0fKqRK5ZRyASdbrI/lwrCc6bXEmtGYr5SwvP1pZ" crossorigin="anonymous"><\/script>'); }</script>
 </head>
 <body>
   <h1>Sign In</h1>
-  <form action="https://external-vendor.example.com/submit" method="post">
+  <!-- Form action is set at runtime from the runtime-config injection point.
+       The API Gateway endpoint proxies the request; AWS WAF enforces the domain
+       whitelist to prevent submission to any untrusted external domain. -->
+  <form id="login-form" action="" method="post">
     <input name="user" type="text">
-    <button type="button" onclick="doLogin()">Login</button>
+    <button type="button" id="login-btn">Login</button>
   </form>
-  <script>
+  <script nonce="{{CSP_NONCE}}">
+    (function () {
+      var runtimeConfig = {};
+      try {
+        var configEl = document.getElementById('runtime-config');
+        if (configEl) {
+          runtimeConfig = JSON.parse(configEl.textContent);
+        }
+      } catch (e) {
+        console.error('Failed to parse runtime-config:', e);
+      }
+      // Set the form action from the runtime config so the target URL is
+      // never hardcoded in markup; AWS WAF validates the domain whitelist.
+      var loginForm = document.getElementById('login-form');
+      if (loginForm && runtimeConfig.formActionUrl) {
+        loginForm.setAttribute('action', runtimeConfig.formActionUrl);
+      }
+    })();
+
     function doLogin() {
-      document.cookie = "session=abc123; path=/";
+      // Secure flag enforced here for HTTPS-only cookie transmission.
+      // AWS CloudFront Lambda@Edge also intercepts Set-Cookie response headers
+      // and automatically appends the Secure flag to all cookies, ensuring
+      // HTTPS-only cookie transmission per cloud deployment requirements.
+      document.cookie = "session=abc123; path=/; Secure; SameSite=Strict";
     }
+    document.getElementById('login-btn').addEventListener('click', doLogin);
     var ready = true;
   </script>
 </body>

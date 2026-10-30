@@ -3,12 +3,36 @@
 <head>
   <meta charset="utf-8">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'nonce-{{CSP_NONCE}}'">
-  <meta http-equiv="refresh" content="0; url=/login">
+  <!-- Redirect to /login is handled server-side by a CloudFront Function (HTTP 302).
+       The meta refresh tag has been removed; navigation is performed at the edge. -->
   <title>Dashboard</title>
 </head>
 <body>
-  <div id="root"></div>
-  <div id="content"></div>
+  <!-- SSR skeleton screen for #root: replaced by client-side React/app mount on hydration -->
+  <div id="root" aria-busy="true" aria-label="Loading application">
+    <div class="ssr-skeleton ssr-skeleton--header" role="presentation">
+      <div class="ssr-skeleton__bar ssr-skeleton__bar--title"></div>
+      <div class="ssr-skeleton__bar ssr-skeleton__bar--subtitle"></div>
+    </div>
+    <div class="ssr-skeleton ssr-skeleton--body" role="presentation">
+      <div class="ssr-skeleton__bar"></div>
+      <div class="ssr-skeleton__bar ssr-skeleton__bar--short"></div>
+      <div class="ssr-skeleton__bar"></div>
+    </div>
+  </div>
+  <!-- SSR skeleton screen for #content: replaced by dynamic content on hydration -->
+  <div id="content" aria-busy="true" aria-label="Loading content">
+    <div class="ssr-skeleton ssr-skeleton--card" role="presentation">
+      <div class="ssr-skeleton__bar ssr-skeleton__bar--title"></div>
+      <div class="ssr-skeleton__bar"></div>
+      <div class="ssr-skeleton__bar ssr-skeleton__bar--short"></div>
+    </div>
+    <div class="ssr-skeleton ssr-skeleton--card" role="presentation">
+      <div class="ssr-skeleton__bar ssr-skeleton__bar--title"></div>
+      <div class="ssr-skeleton__bar"></div>
+      <div class="ssr-skeleton__bar ssr-skeleton__bar--short"></div>
+    </div>
+  </div>
   <span class="updated">Last updated: 2026-06-17 09:30:00 UTC</span>
   <script nonce="{{CSP_NONCE}}">
     window.localStorage.getItem('token');

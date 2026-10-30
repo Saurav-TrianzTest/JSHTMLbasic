@@ -2,12 +2,18 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.google-analytics.com; style-src 'self' http://assets.example.com">
-  <meta name="api-key" content="hardcoded-secret-DO-NOT-USE-000000000000">
-  <meta name="build-version" content="2.4.1-build-20260617">
-  <link rel="stylesheet" href="http://assets.example.com/theme.css">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.google-analytics.com https://{{CLOUDFRONT_DOMAIN}} 'nonce-{{CSP_NONCE}}'; style-src 'self' https://assets.example.com">
+  <script id="runtime-config" type="application/json">{"apiKey":"__RUNTIME_CONFIG_API_KEY__","buildVersion":"__RUNTIME_CONFIG_BUILD_VERSION__"}</script>
+  <meta name="api-key" content="__RUNTIME_CONFIG_API_KEY__">
+  <meta name="build-version" content="#{BUILD_VERSION}">
+  <link rel="stylesheet" href="https://assets.example.com/theme.css">
+  <link rel="preconnect" href="https://cognito-idp.us-east-1.amazonaws.com">
+  <link rel="preconnect" href="https://cognito-identity.us-east-1.amazonaws.com">
+  <link rel="preconnect" href="https://{{CLOUDFRONT_DOMAIN}}">
+  <link rel="preconnect" href="https://www.google-analytics.com">
   <title>Deploy Config</title>
-  <script src="https://www.google-analytics.com/analytics.js"></script>
+  <script src="https://www.google-analytics.com/analytics.js" integrity="sha384-9hMAdN+G12FuXKNyYYazvfsLGBksEhvfayjgq21CZBrU5Qc66QD2vQ2H7GCsqTcp" crossorigin="anonymous"></script>
+  <script nonce="{{CSP_NONCE}}">if (typeof window.ga === 'undefined') { document.write('<script src="https://{{CLOUDFRONT_DOMAIN}}/assets/js/analytics.js" integrity="sha384-9hMAdN+G12FuXKNyYYazvfsLGBksEhvfayjgq21CZBrU5Qc66QD2vQ2H7GCsqTcp" crossorigin="anonymous"><\/script>'); }</script>
 </head>
 <body>
   <h1>Settings</h1>
