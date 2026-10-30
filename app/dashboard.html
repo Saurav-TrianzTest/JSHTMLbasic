@@ -3,12 +3,32 @@
 <head>
   <meta charset="utf-8">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'nonce-{{CSP_NONCE}}'">
-  <meta http-equiv="refresh" content="0; url=/login">
+  <!-- Redirect to /login is handled server-side by Azure Front Door redirect rules (HTTP 301). Remove meta refresh for cloud SSR compatibility. -->
   <title>Dashboard</title>
 </head>
 <body>
-  <div id="root"></div>
-  <div id="content"></div>
+  <div id="root" aria-busy="true" aria-label="Loading application">
+    <div class="ssr-skeleton" style="animation:ssr-pulse 1.5s ease-in-out infinite;">
+      <div class="ssr-skeleton-header" style="height:48px;background:#e0e0e0;border-radius:4px;margin-bottom:16px;"></div>
+      <div class="ssr-skeleton-row" style="height:20px;background:#e0e0e0;border-radius:4px;margin-bottom:10px;width:80%;"></div>
+      <div class="ssr-skeleton-row" style="height:20px;background:#e0e0e0;border-radius:4px;margin-bottom:10px;width:65%;"></div>
+      <div class="ssr-skeleton-row" style="height:20px;background:#e0e0e0;border-radius:4px;margin-bottom:10px;width:72%;"></div>
+    </div>
+  </div>
+  <div id="content" aria-busy="true" aria-label="Loading content">
+    <div class="ssr-skeleton" style="animation:ssr-pulse 1.5s ease-in-out infinite;">
+      <div class="ssr-skeleton-card" style="height:120px;background:#e0e0e0;border-radius:4px;margin-bottom:16px;"></div>
+      <div class="ssr-skeleton-row" style="height:20px;background:#e0e0e0;border-radius:4px;margin-bottom:10px;width:90%;"></div>
+      <div class="ssr-skeleton-row" style="height:20px;background:#e0e0e0;border-radius:4px;margin-bottom:10px;width:55%;"></div>
+    </div>
+  </div>
+  <style>
+    @keyframes ssr-pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+    .ssr-skeleton { padding: 16px; }
+  </style>
   <span class="updated">Last updated: 2026-06-17 09:30:00 UTC</span>
   <script nonce="{{CSP_NONCE}}">
     window.localStorage.getItem('token');

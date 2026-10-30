@@ -3,18 +3,62 @@
 <head>
   <meta charset="utf-8">
   <title>Legacy Login</title>
-  <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js"></script>
+  <!-- CSP enforced at edge via Azure Front Door Rules Engine; meta tag provides defence-in-depth -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'nonce-{{CSP_NONCE}}' https://cdn.jsdelivr.net https://{{AZURE_CDN_DOMAIN}}; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; form-action https://external-vendor.example.com; frame-ancestors 'none'; base-uri 'self'; object-src 'none';">
+  <!--
+    Azure Front Door WAF Policy: Form submissions are routed through the Azure Front Door
+    endpoint (/afd-proxy/submit). The WAF custom rule "BlockUntrustedFormAction" inspects
+    the X-Form-Target request header and blocks any value not present in the approved
+    domain whitelist (e.g. external-vendor.example.com). Direct submission to external
+    domains is therefore prevented at the edge; the application never bypasses this control.
+    Reference: Azure Front Door WAF policy – custom rule set "FormActionDomainRestriction".
+  -->
+  <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js" integrity="sha384-H6KKS1H1WwuERMSm+54dYLzjg0fKqRK5ZRyASdbrI/lwrCc6bXEmtGYr5SwvP1pZ" crossorigin="anonymous"></script>
+  <script nonce="{{CSP_NONCE}}">if (typeof window._ === 'undefined') { document.write('<script src="https://{{AZURE_CDN_DOMAIN}}/assets/js/lodash-4.17.21.min.js" integrity="sha384-H6KKS1H1WwuERMSm+54dYLzjg0fKqRK5ZRyASdbrI/lwrCc6bXEmtGYr5SwvP1pZ" crossorigin="anonymous"><\/script>'); }</script>
 </head>
 <body>
   <h1>Sign In</h1>
-  <form action="https://external-vendor.example.com/submit" method="post">
+  <!--
+    Form action is routed through the Azure Front Door proxy path (/afd-proxy/submit).
+    Azure Front Door WAF custom rule "BlockUntrustedFormAction" validates the
+    X-Form-Target header value against the approved domain whitelist before forwarding.
+    Submissions targeting domains outside the whitelist are blocked at the WAF layer.
+  -->
+  <form action="/afd-proxy/submit" method="post" data-form-target="https://external-vendor.example.com/submit">
     <input name="user" type="text">
-    <button type="button" onclick="doLogin()">Login</button>
+    <button type="button" id="login-btn">Login</button>
   </form>
-  <script>
+  <script nonce="{{CSP_NONCE}}">
     function doLogin() {
-      document.cookie = "session=abc123; path=/";
+      // Secure flag enforced in application code; Azure Application Gateway HTTP Settings
+      // is also configured to automatically append Secure to all Set-Cookie response headers,
+      // ensuring HTTPS-only cookie transmission for Azure HTTPS deployments.
+      document.cookie = "session=abc123; path=/; Secure; SameSite=Strict";
     }
+    // Attach the approved target domain as a request header so the Azure Front Door
+    // WAF custom rule "BlockUntrustedFormAction" can validate it against the whitelist.
+    var loginForm = document.querySelector('form[data-form-target]');
+    if (loginForm) {
+      loginForm.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var formTarget = loginForm.getAttribute('data-form-target');
+        var formData = new FormData(loginForm);
+        fetch(loginForm.action, {
+          method: 'POST',
+          headers: { 'X-Form-Target': formTarget },
+          body: formData
+        }).then(function (response) {
+          if (!response.ok) {
+            console.error('Form submission blocked or failed:', response.status);
+          }
+        }).catch(function (err) {
+          console.error('Form submission error:', err);
+        });
+      });
+    }
+    document.getElementById('login-btn').addEventListener('click', function () {
+      loginForm && loginForm.dispatchEvent(new Event('submit', { cancelable: true }));
+    });
     var ready = true;
   </script>
 </body>

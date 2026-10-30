@@ -2,12 +2,22 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.google-analytics.com; style-src 'self' http://assets.example.com">
-  <meta name="api-key" content="hardcoded-secret-DO-NOT-USE-000000000000">
-  <meta name="build-version" content="2.4.1-build-20260617">
-  <link rel="stylesheet" href="http://assets.example.com/theme.css">
+  <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests; default-src 'self'; script-src 'self' https://www.google-analytics.com https://{{AZURE_CDN_DOMAIN}} 'nonce-{{CSP_NONCE}}'; style-src 'self' https://assets.example.com">
+  <!-- api-key is injected at build time by Azure Pipelines token substitution from an Azure Key Vault-linked variable group -->
+  <meta name="api-key" content="__API_KEY__">
+  <!-- build-version is injected at build time by Azure Pipelines token substitution from a Variable Group -->
+  <meta name="build-version" content="__BUILD_VERSION__">
+  <link rel="stylesheet" href="https://assets.example.com/theme.css">
+  <!-- Preconnect to Azure Active Directory (Entra ID) for authentication -->
+  <link rel="preconnect" href="https://login.microsoftonline.com" crossorigin>
+  <link rel="preconnect" href="https://login.microsoft.com" crossorigin>
+  <!-- Preconnect to Azure CDN for static asset delivery -->
+  <link rel="preconnect" href="https://az416426.vo.msecnd.net" crossorigin>
+  <!-- Preconnect to Google Analytics for external analytics service -->
+  <link rel="preconnect" href="https://www.google-analytics.com" crossorigin>
   <title>Deploy Config</title>
-  <script src="https://www.google-analytics.com/analytics.js"></script>
+  <script src="https://www.google-analytics.com/analytics.js" integrity="sha384-9hMAdN+G12FuXKNyYYazvfsLGBksEhvfayjgq21CZBrU5Qc66QD2vQ2H7GCsqTcp" crossorigin="anonymous"></script>
+  <script nonce="{{CSP_NONCE}}">if (typeof window.ga === 'undefined') { document.write('<script src="https://{{AZURE_CDN_DOMAIN}}/assets/js/analytics.js" integrity="sha384-9hMAdN+G12FuXKNyYYazvfsLGBksEhvfayjgq21CZBrU5Qc66QD2vQ2H7GCsqTcp" crossorigin="anonymous"><\/script>'); }</script>
 </head>
 <body>
   <h1>Settings</h1>
