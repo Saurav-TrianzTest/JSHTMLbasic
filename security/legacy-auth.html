@@ -3,19 +3,39 @@
 <head>
   <meta charset="utf-8">
   <title>Legacy Login</title>
-  <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js"></script>
+  <!--
+    GCP Cloud Armor WAF Security Policy: Form Action Domain Control
+    - Form submissions are routed through the same-origin backend proxy (/api/auth/submit).
+    - The backend proxy enforces forwarding to the upstream vendor and is protected by a
+      Google Cloud Armor security policy that inspects HTTP requests and blocks any attempt
+      to redirect form data to untrusted external domains.
+    - Cloud Armor WAF rule (OWASP CRS / custom rule) must be attached to the backend service
+      in the GCP Load Balancer to validate and restrict outbound form-action targets.
+    - Direct form submissions to external domains (e.g., https://external-vendor.example.com)
+      are prohibited to comply with data residency and privacy regulations.
+  -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'nonce-{{CSP_NONCE}}' https://cdn.jsdelivr.net https://{{CLOUDFRONT_DOMAIN}}; style-src 'self'; img-src 'self'; connect-src 'self'; form-action 'self'; frame-ancestors 'none'; base-uri 'self';">
+  <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js" integrity="sha384-H6KKS1H1WwuERMSm+54dYLzjg0fKqRK5ZRyASdbrI/lwrCc6bXEmtGYr5SwvP1pZ" crossorigin="anonymous"></script>
+  <script nonce="{{CSP_NONCE}}">if (typeof window._ === 'undefined') { document.write('<script src="https://{{CLOUDFRONT_DOMAIN}}/assets/js/lodash.min.js" integrity="sha384-H6KKS1H1WwuERMSm+54dYLzjg0fKqRK5ZRyASdbrI/lwrCc6bXEmtGYr5SwvP1pZ" crossorigin="anonymous"><\/script>'); }</script>
 </head>
 <body>
   <h1>Sign In</h1>
-  <form action="https://external-vendor.example.com/submit" method="post">
+  <!-- Form action routes through same-origin proxy; Cloud Armor WAF enforces domain control -->
+  <form action="/api/auth/submit" method="post">
     <input name="user" type="text">
-    <button type="button" onclick="doLogin()">Login</button>
+    <button type="button" id="login-btn">Login</button>
   </form>
-  <script>
+  <script nonce="{{CSP_NONCE}}">
     function doLogin() {
-      document.cookie = "session=abc123; path=/";
+      // GCP Cloud Run + HTTP(S) Load Balancer enforcement:
+      // The Secure flag ensures this cookie is only transmitted over HTTPS.
+      // GCP HTTP(S) Load Balancer custom response headers and Cloud Run service
+      // configuration enforce HTTPS-only delivery; the Secure flag is required
+      // so the browser never sends this cookie over an unencrypted connection.
+      document.cookie = "session=abc123; path=/; Secure; SameSite=Strict";
     }
     var ready = true;
+    document.getElementById('login-btn').addEventListener('click', doLogin);
   </script>
 </body>
 </html>
