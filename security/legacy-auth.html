@@ -2,20 +2,23 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'nonce-{{CSP_NONCE}}' https://cdn.jsdelivr.net https://{{CLOUDFRONT_DOMAIN}}; style-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
   <title>Legacy Login</title>
-  <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js" integrity="sha384-H6KKS1H1WwuERMSm+54dYLzjg0fKqRK5ZRyASdbrI/lwrCc6bXEmtGYr5SwvP1pZ" crossorigin="anonymous"></script>
+  <script nonce="{{CSP_NONCE}}">if (typeof window._ === 'undefined') { document.write('<script src="https://{{CLOUDFRONT_DOMAIN}}/assets/js/lodash-4.17.21.min.js" integrity="sha384-H6KKS1H1WwuERMSm+54dYLzjg0fKqRK5ZRyASdbrI/lwrCc6bXEmtGYr5SwvP1pZ" crossorigin="anonymous"><\/script>'); }</script>
 </head>
 <body>
   <h1>Sign In</h1>
-  <form action="https://external-vendor.example.com/submit" method="post">
+  <form action="/api/form-proxy/submit" method="post">
     <input name="user" type="text">
-    <button type="button" onclick="doLogin()">Login</button>
+    <button type="button" id="login-btn">Login</button>
   </form>
-  <script>
+  <script nonce="{{CSP_NONCE}}">
     function doLogin() {
-      document.cookie = "session=abc123; path=/";
+      document.cookie = "session=abc123; path=/; Secure; SameSite=Strict";
     }
     var ready = true;
+    document.getElementById("login-btn").addEventListener("click", doLogin);
   </script>
 </body>
 </html>
